@@ -73,13 +73,17 @@ def get_saliency_map(model, input_tensor):
     
     return g
                               
-def export_onnx_model(model, onnx_file_path):
+def export_onnx_model(model, dummy_input, onnx_file_path):
     """ Export the given model in ONNX format so that it can be visualized using Netron
         Inputs: model - resnet18 model
                 onnx_file_path - file name for saving; eg: "resnet18.onnx"
+                dummy_input - example: torch.randn(1, 3, 224, 224)
+                
+                if model is 'slow_fast':
+                    dummy_input = [torch.randn(1, 3, 8, 224, 224), torch.randn(1, 3, 32, 224, 224)]
     """    
     # 1. Create a dummy input (Batch=1, Channels=3, H=224, W=224)
-    dummy_input = torch.randn(1, 3, 224, 224)
+
 
     # 2. Export to ONNX   
     torch.onnx.export(
