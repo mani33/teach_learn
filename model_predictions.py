@@ -28,7 +28,7 @@ xx = sim.transform(X)
 sim2 = IterativeImputer(missing_values=np.nan).set_output(transform='pandas')
 x = sim2.fit_transform(X)
 #%% Check for class imbalance
-h = np.histogram(y, bins=[-np.inf, 0, 1, 2, 3])
+h = np.histogram(y, bins=np.append(np.sort(y['class'].unique()),np.inf))
 #%% Fit a multinomial logistic regression
 model = LogisticRegression(multi_class='multinomial', class_weight='balanced')
 model.fit(x, y)
