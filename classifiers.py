@@ -12,6 +12,10 @@ from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_validate, StratifiedKFold
 from sklearn.metrics import RocCurveDisplay, roc_curve, confusion_matrix, \
     ConfusionMatrixDisplay
+import shap
+from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb
+from sklearn.inspection import permutation_importance
 # %% Split data into training and testing
 dfo = pd.read_csv(r'data/TCGA_InfoWithGrade.csv')
 
@@ -75,11 +79,32 @@ inner_best_model = GridSearchCV(LogisticRegression(solver='saga', penalty='l1', 
 m = df['Age_at_diagnosis'].mean()
 s = df['Age_at_diagnosis'].std()
 df.loc[:,'Age_at_diagnosis'] = (df['Age_at_diagnosis'].values-m)/s
-X = df[features].values
-y = df['Grade'].values
+X = df[features]
+y = df['Grade']
 models = cross_validate(inner_best_model, X, y, scoring='roc_auc', 
                         cv=StratifiedKFold(n_splits=5), return_estimator=True)
                        
-                        
+#%%
+model = RandomForestClassifier(min_samples_leaf=2, min_samples_split=2)
+model.fit(X,y)
+rf_exp = shap.TreeExplainer(model,feature_names = features)
+rf_shap_val = rf_exp.shap_values(X_test)
 
+shap.summary_plot(rf_shap_val[:,:,1], X_test, feature_names=features)
+model.score(X_test, y_test)
+mv = np.mean(np.abs(rf_shap_val), axis=0)[:,1]
+px = np.arange(mv.shape[0])
+features = np.array(features)
+ind = np.argsort(mv)
+plt.subplot(1,3,1)
+plt.barh(features[ind], mv[ind])
+# plt.xticks(ticks=px, labels=features[ind], rotation=45, ha='right')
 
+plt.subplot(1,3,2)
+plt.barh(features[ind], model.feature_importances_[ind])
+# plt.xticks(ticks=px, labels=features[ind], rotation=45, ha='right')
+
+plt.subplot(1,3,3)
+fim = permutation_importance(model, X_test, y_test, n_repeats=10)
+plt.barh(features[ind], fim['importances_mean'][ind])
+# plt.xticks(ticks=px, labels=features[ind], rotation=45, ha='right')
